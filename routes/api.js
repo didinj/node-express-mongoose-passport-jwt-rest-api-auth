@@ -55,8 +55,10 @@ router.post('/book', passport.authenticate('jwt', { session: false}), function(r
   if (token) {
     console.log(req.body);
     var newBook = new Book({
-      text: req.body.text,
-      reason: req.body.reason
+      isbn: req.body.isbn,
+      title: req.body.title,
+      author: req.body.author,
+      publisher: req.body.publisher
     });
 
     newBook.save(function(err) {
