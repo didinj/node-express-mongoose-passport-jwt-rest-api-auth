@@ -1,19 +1,18 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var morgan = require('morgan');
-var mongoose = require('mongoose');
-var passport = require('passport');
-var config = require('./config/database');
+let express = require('express'),
+    path = require('path'),
+    favicon = require('serve-favicon'),
+    logger = require('morgan'),
+    cookieParser = require('cookie-parser'),
+    bodyParser = require('body-parser'),
+    morgan = require('morgan'),
+    mongoose = require('mongoose'),
+    passport = require('passport'),
+    config = require('./config/database');
 
+require('./config/passport')(passport);
 mongoose.connect(config.database);
 
-var api = require('./routes/api');
-
-var app = express();
+let app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -35,15 +34,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(morgan('dev'));
 app.use(passport.initialize());
 
+
+/**
+ * Server Routes
+ */
+
 app.get('/', function(req, res) {
-  res.send('Page under construction.');
+    res.send('Page under construction.');
 });
 
-app.use('/api', api);
+// Calling routes
+let authentication = require('./routes/auth');
+let book = require('./routes/book');
+
+// Using routes
+app.use('/api', authentication);
+app.use('/api', passport.authenticate('jwt', { session: false}), book);
+
+/**
+ * End Server Routes
+ */
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  var err = new Error('Not Found');
+  let err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
