@@ -9,6 +9,13 @@
 'use strict'
 
 /**
+ * Module dependencies.
+ * @private
+ */
+
+var Buffer = require('safe-buffer').Buffer
+
+/**
  * Module exports.
  * @public
  */
@@ -56,7 +63,7 @@ function auth (req) {
   }
 
   // get header
-  var header = getAuthorization(req.req || req)
+  var header = getAuthorization(req)
 
   // parse header
   return parse(header)
@@ -68,7 +75,7 @@ function auth (req) {
  */
 
 function decodeBase64 (str) {
-  return new Buffer(str, 'base64').toString()
+  return Buffer.from(str, 'base64').toString()
 }
 
 /**

@@ -39,7 +39,9 @@ router.post('/signin', function(req, res) {
       user.comparePassword(req.body.password, function (err, isMatch) {
         if (isMatch && !err) {
           // if user is found and password is right create a token
-          var token = jwt.sign(user, config.secret);
+          var token = jwt.sign(user.toJSON(), config.secret, {
+            expiresIn: 604800 // 1 week
+          });
           // return the information including token as JSON
           res.json({success: true, token: 'JWT ' + token});
         } else {
@@ -48,6 +50,11 @@ router.post('/signin', function(req, res) {
       });
     }
   });
+});
+
+router.get('/signout', passport.authenticate('jwt', { session: false}), function(req, res) {
+  req.logout();
+  res.json({success: true, msg: 'Sign out successfully.'});
 });
 
 router.post('/book', passport.authenticate('jwt', { session: false}), function(req, res) {

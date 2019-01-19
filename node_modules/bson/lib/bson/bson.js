@@ -1,17 +1,15 @@
-"use strict"
+'use strict';
 
-var writeIEEE754 = require('./float_parser').writeIEEE754,
-	readIEEE754 = require('./float_parser').readIEEE754,
-  Map = require('./map'),
-	Long = require('./long'),
+var Map = require('./map'),
+  Long = require('./long'),
   Double = require('./double'),
   Timestamp = require('./timestamp'),
   ObjectID = require('./objectid'),
   BSONRegExp = require('./regexp'),
   Symbol = require('./symbol'),
-	Int32 = require('./int_32'),
+  Int32 = require('./int_32'),
   Code = require('./code'),
-	Decimal128 = require('./decimal128'),
+  Decimal128 = require('./decimal128'),
   MinKey = require('./min_key'),
   MaxKey = require('./max_key'),
   DBRef = require('./db_ref'),
@@ -19,20 +17,20 @@ var writeIEEE754 = require('./float_parser').writeIEEE754,
 
 // Parts of the parser
 var deserialize = require('./parser/deserializer'),
-	serializer = require('./parser/serializer'),
-	calculateObjectSize = require('./parser/calculate_size');
+  serializer = require('./parser/serializer'),
+  calculateObjectSize = require('./parser/calculate_size');
 
 /**
  * @ignore
  * @api private
  */
-// Max Size
-var MAXSIZE = (1024*1024*17);
-// Max Document Buffer size
+// Default Max Size
+var MAXSIZE = 1024 * 1024 * 17;
+
+// Current Internal Temporary Serialization Buffer
 var buffer = new Buffer(MAXSIZE);
 
-var BSON = function() {
-}
+var BSON = function() {};
 
 /**
  * Serialize a Javascript object.
@@ -41,28 +39,44 @@ var BSON = function() {
  * @param {Boolean} [options.checkKeys] the serializer will check if keys are valid.
  * @param {Boolean} [options.serializeFunctions=false] serialize the javascript functions **(default:false)**.
  * @param {Boolean} [options.ignoreUndefined=true] ignore undefined fields **(default:true)**.
+ * @param {Number} [options.minInternalBufferSize=1024*1024*17] minimum size of the internal temporary serialization buffer **(default:1024*1024*17)**.
  * @return {Buffer} returns the Buffer object containing the serialized object.
  * @api public
  */
 BSON.prototype.serialize = function serialize(object, options) {
-	options = options || {};
-	// Unpack the options
-	var checkKeys = typeof options.checkKeys == 'boolean'
-		? options.checkKeys : false;
-	var serializeFunctions = typeof options.serializeFunctions == 'boolean'
-		? options.serializeFunctions : false;
-	var ignoreUndefined = typeof options.ignoreUndefined == 'boolean'
-		? options.ignoreUndefined : true;
+  options = options || {};
+  // Unpack the options
+  var checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
+  var serializeFunctions =
+    typeof options.serializeFunctions === 'boolean' ? options.serializeFunctions : false;
+  var ignoreUndefined =
+    typeof options.ignoreUndefined === 'boolean' ? options.ignoreUndefined : true;
+  var minInternalBufferSize =
+    typeof options.minInternalBufferSize === 'number' ? options.minInternalBufferSize : MAXSIZE;
+  
+  // Resize the internal serialization buffer if needed
+  if (buffer.length < minInternalBufferSize) {
+    buffer = new Buffer(minInternalBufferSize);
+  }
 
-	// Attempt to serialize
-	var serializationIndex = serializer(buffer, object, checkKeys, 0, 0, serializeFunctions, ignoreUndefined, []);
-	// Create the final buffer
-	var finishedBuffer = new Buffer(serializationIndex);
-	// Copy into the finished buffer
-	buffer.copy(finishedBuffer, 0, 0, finishedBuffer.length);
-	// Return the buffer
-	return finishedBuffer;
-}
+  // Attempt to serialize
+  var serializationIndex = serializer(
+    buffer,
+    object,
+    checkKeys,
+    0,
+    0,
+    serializeFunctions,
+    ignoreUndefined,
+    []
+  );
+  // Create the final buffer
+  var finishedBuffer = new Buffer(serializationIndex);
+  // Copy into the finished buffer
+  buffer.copy(finishedBuffer, 0, 0, finishedBuffer.length);
+  // Return the buffer
+  return finishedBuffer;
+};
 
 /**
  * Serialize a Javascript object using a predefined Buffer and index into the buffer, useful when pre-allocating the space for serialization.
@@ -77,24 +91,29 @@ BSON.prototype.serialize = function serialize(object, options) {
  * @api public
  */
 BSON.prototype.serializeWithBufferAndIndex = function(object, finalBuffer, options) {
-	options = options || {};
-	// Unpack the options
-	var checkKeys = typeof options.checkKeys == 'boolean'
-		? options.checkKeys : false;
-	var serializeFunctions = typeof options.serializeFunctions == 'boolean'
-		? options.serializeFunctions : false;
-	var ignoreUndefined = typeof options.ignoreUndefined == 'boolean'
-		? options.ignoreUndefined : true;
-	var startIndex = typeof options.index == 'number'
-		? options.index : 0;
+  options = options || {};
+  // Unpack the options
+  var checkKeys = typeof options.checkKeys === 'boolean' ? options.checkKeys : false;
+  var serializeFunctions =
+    typeof options.serializeFunctions === 'boolean' ? options.serializeFunctions : false;
+  var ignoreUndefined =
+    typeof options.ignoreUndefined === 'boolean' ? options.ignoreUndefined : true;
+  var startIndex = typeof options.index === 'number' ? options.index : 0;
 
-	// Attempt to serialize
-	var serializationIndex = serializer(buffer, object, checkKeys, startIndex || 0, 0, serializeFunctions, ignoreUndefined);
-	buffer.copy(finalBuffer, startIndex, 0, serializationIndex);
+  // Attempt to serialize
+  var serializationIndex = serializer(
+    finalBuffer,
+    object,
+    checkKeys,
+    startIndex || 0,
+    0,
+    serializeFunctions,
+    ignoreUndefined
+  );
 
-	// Return the index
-	return serializationIndex - 1;
-}
+  // Return the index
+  return serializationIndex - 1;
+};
 
 /**
  * Deserialize data as BSON.
@@ -113,7 +132,7 @@ BSON.prototype.serializeWithBufferAndIndex = function(object, finalBuffer, optio
  */
 BSON.prototype.deserialize = function(buffer, options) {
   return deserialize(buffer, options);
-}
+};
 
 /**
  * Calculate the bson size for a passed in Javascript object.
@@ -125,15 +144,15 @@ BSON.prototype.deserialize = function(buffer, options) {
  * @api public
  */
 BSON.prototype.calculateObjectSize = function(object, options) {
-	options = options || {};
+  options = options || {};
 
-	var serializeFunctions = typeof options.serializeFunctions == 'boolean'
-		? options.serializeFunctions : false;
-	var ignoreUndefined = typeof options.ignoreUndefined == 'boolean'
-		? options.ignoreUndefined : true;
+  var serializeFunctions =
+    typeof options.serializeFunctions === 'boolean' ? options.serializeFunctions : false;
+  var ignoreUndefined =
+    typeof options.ignoreUndefined === 'boolean' ? options.ignoreUndefined : true;
 
   return calculateObjectSize(object, serializeFunctions, ignoreUndefined);
-}
+};
 
 /**
  * Deserialize stream data as BSON documents.
@@ -155,13 +174,21 @@ BSON.prototype.calculateObjectSize = function(object, options) {
  * @return {Number} returns the next index in the buffer after deserialization **x** numbers of documents.
  * @api public
  */
-BSON.prototype.deserializeStream = function(data, startIndex, numberOfDocuments, documents, docStartIndex, options) {
+BSON.prototype.deserializeStream = function(
+  data,
+  startIndex,
+  numberOfDocuments,
+  documents,
+  docStartIndex,
+  options
+) {
   options = options != null ? options : {};
   var index = startIndex;
   // Loop over all documents
-  for(var i = 0; i < numberOfDocuments; i++) {
+  for (var i = 0; i < numberOfDocuments; i++) {
     // Find size of the document
-    var size = data[index] | data[index + 1] << 8 | data[index + 2] << 16 | data[index + 3] << 24;
+    var size =
+      data[index] | (data[index + 1] << 8) | (data[index + 2] << 16) | (data[index + 3] << 24);
     // Update options with index
     options['index'] = index;
     // Parse the document at this point
@@ -172,26 +199,26 @@ BSON.prototype.deserializeStream = function(data, startIndex, numberOfDocuments,
 
   // Return object containing end index of parsing and list of documents
   return index;
-}
+};
 
 /**
  * @ignore
  * @api private
  */
 // BSON MAX VALUES
-BSON.BSON_INT32_MAX = 0x7FFFFFFF;
+BSON.BSON_INT32_MAX = 0x7fffffff;
 BSON.BSON_INT32_MIN = -0x80000000;
 
 BSON.BSON_INT64_MAX = Math.pow(2, 63) - 1;
 BSON.BSON_INT64_MIN = -Math.pow(2, 63);
 
 // JS MAX PRECISE VALUES
-BSON.JS_INT_MAX = 0x20000000000000;  // Any integer up to 2^53 can be precisely represented by a double.
-BSON.JS_INT_MIN = -0x20000000000000;  // Any integer down to -2^53 can be precisely represented by a double.
+BSON.JS_INT_MAX = 0x20000000000000; // Any integer up to 2^53 can be precisely represented by a double.
+BSON.JS_INT_MIN = -0x20000000000000; // Any integer down to -2^53 can be precisely represented by a double.
 
 // Internal long versions
-var JS_INT_MAX_LONG = Long.fromNumber(0x20000000000000);  // Any integer up to 2^53 can be precisely represented by a double.
-var JS_INT_MIN_LONG = Long.fromNumber(-0x20000000000000);  // Any integer down to -2^53 can be precisely represented by a double.
+// var JS_INT_MAX_LONG = Long.fromNumber(0x20000000000000); // Any integer up to 2^53 can be precisely represented by a double.
+// var JS_INT_MIN_LONG = Long.fromNumber(-0x20000000000000); // Any integer down to -2^53 can be precisely represented by a double.
 
 /**
  * Number BSON Type

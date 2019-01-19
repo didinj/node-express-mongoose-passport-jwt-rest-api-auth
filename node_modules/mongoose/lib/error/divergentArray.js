@@ -3,7 +3,9 @@
  * Module dependencies.
  */
 
-var MongooseError = require('../error.js');
+'use strict';
+
+const MongooseError = require('./');
 
 /*!
  * DivergentArrayError constructor.
@@ -12,7 +14,7 @@ var MongooseError = require('../error.js');
  */
 
 function DivergentArrayError(paths) {
-  var msg = 'For your own good, using `document.save()` to update an array '
+  const msg = 'For your own good, using `document.save()` to update an array '
           + 'which was selected using an $elemMatch projection OR '
           + 'populated using skip, limit, query conditions, or exclusion of '
           + 'the _id field when the operation results in a $pop or $set of '
@@ -20,11 +22,15 @@ function DivergentArrayError(paths) {
           + 'path(s) would have been modified unsafely:\n'
           + '  ' + paths.join('\n  ') + '\n'
           + 'Use Model.update() to update these arrays instead.';
-          // TODO write up a docs page (FAQ) and link to it
+  // TODO write up a docs page (FAQ) and link to it
 
   MongooseError.call(this, msg);
-  Error.captureStackTrace && Error.captureStackTrace(this, arguments.callee);
   this.name = 'DivergentArrayError';
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this);
+  } else {
+    this.stack = new Error().stack;
+  }
 }
 
 /*!

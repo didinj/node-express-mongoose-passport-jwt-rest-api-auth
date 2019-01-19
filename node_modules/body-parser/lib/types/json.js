@@ -80,12 +80,19 @@ function json (options) {
 
       if (first !== '{' && first !== '[') {
         debug('strict violation')
-        throw new SyntaxError('Unexpected token ' + first)
+        throw createStrictSyntaxError(body, first)
       }
     }
 
-    debug('parse json')
-    return JSON.parse(body, reviver)
+    try {
+      debug('parse json')
+      return JSON.parse(body, reviver)
+    } catch (e) {
+      throw normalizeJsonSyntaxError(e, {
+        message: e.message,
+        stack: e.stack
+      })
+    }
   }
 
   return function jsonParser (req, res, next) {
@@ -118,7 +125,8 @@ function json (options) {
     if (charset.substr(0, 4) !== 'utf-') {
       debug('invalid charset')
       next(createError(415, 'unsupported charset "' + charset.toUpperCase() + '"', {
-        charset: charset
+        charset: charset,
+        type: 'charset.unsupported'
       }))
       return
     }
@@ -129,6 +137,29 @@ function json (options) {
       inflate: inflate,
       limit: limit,
       verify: verify
+    })
+  }
+}
+
+/**
+ * Create strict violation syntax error matching native error.
+ *
+ * @param {string} str
+ * @param {string} char
+ * @return {Error}
+ * @private
+ */
+
+function createStrictSyntaxError (str, char) {
+  var index = str.indexOf(char)
+  var partial = str.substring(0, index) + '#'
+
+  try {
+    JSON.parse(partial); /* istanbul ignore next */ throw new SyntaxError('strict violation')
+  } catch (e) {
+    return normalizeJsonSyntaxError(e, {
+      message: e.message.replace('#', char),
+      stack: e.stack
     })
   }
 }
@@ -154,10 +185,35 @@ function firstchar (str) {
 
 function getCharset (req) {
   try {
-    return contentType.parse(req).parameters.charset.toLowerCase()
+    return (contentType.parse(req).parameters.charset || '').toLowerCase()
   } catch (e) {
     return undefined
   }
+}
+
+/**
+ * Normalize a SyntaxError for JSON.parse.
+ *
+ * @param {SyntaxError} error
+ * @param {object} obj
+ * @return {SyntaxError}
+ */
+
+function normalizeJsonSyntaxError (error, obj) {
+  var keys = Object.getOwnPropertyNames(error)
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i]
+    if (key !== 'stack' && key !== 'message') {
+      delete error[key]
+    }
+  }
+
+  // replace stack before message for Node.js 0.10 and below
+  error.stack = obj.stack.replace(error.message, obj.message)
+  error.message = obj.message
+
+  return error
 }
 
 /**

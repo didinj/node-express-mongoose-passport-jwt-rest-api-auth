@@ -1,3 +1,57 @@
+<a name="1.1.0"></a>
+# [1.1.0](https://github.com/mongodb/js-bson/compare/v1.0.9...v1.1.0) (2018-08-13)
+
+
+### Bug Fixes
+
+* **serializer:** do not use checkKeys for $clusterTime ([573e141](https://github.com/mongodb/js-bson/commit/573e141))
+
+
+
+<a name="1.0.9"></a>
+## [1.0.9](https://github.com/mongodb/js-bson/compare/v1.0.8...v1.0.9) (2018-06-07)
+
+
+### Bug Fixes
+
+* **serializer:** remove use of `const` ([5feb12f](https://github.com/mongodb/js-bson/commit/5feb12f))
+
+
+
+<a name="1.0.7"></a>
+## [1.0.7](https://github.com/mongodb/js-bson/compare/v1.0.6...v1.0.7) (2018-06-06)
+
+
+### Bug Fixes
+
+* **binary:** add type checking for buffer ([26b05b5](https://github.com/mongodb/js-bson/commit/26b05b5))
+* **bson:** fix custom inspect property ([080323b](https://github.com/mongodb/js-bson/commit/080323b))
+* **readme:** clarify documentation about deserialize methods ([20f764c](https://github.com/mongodb/js-bson/commit/20f764c))
+* **serialization:** normalize function stringification ([1320c10](https://github.com/mongodb/js-bson/commit/1320c10))
+
+
+
+<a name="1.0.6"></a>
+## [1.0.6](https://github.com/mongodb/js-bson/compare/v1.0.5...v1.0.6) (2018-03-12)
+
+
+### Features
+
+* **serialization:** support arbitrary sizes for the internal serialization buffer ([abe97bc](https://github.com/mongodb/js-bson/commit/abe97bc))
+
+
+
+<a name="1.0.5"></a>
+## 1.0.5 (2018-02-26)
+
+
+### Bug Fixes
+
+* **decimal128:** add basic guard against REDOS attacks ([bd61c45](https://github.com/mongodb/js-bson/commit/bd61c45))
+* **objectid:** if pid is 1, use random value ([e188ae6](https://github.com/mongodb/js-bson/commit/e188ae6))
+
+
+
 1.0.4 2016-01-11
 ----------------
 - #204 remove Buffer.from as it's partially broken in early 4.x.x. series of node releases.
