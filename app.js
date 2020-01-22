@@ -10,7 +10,7 @@ var passport = require('passport');
 var cors = require('cors');
 var config = require('./config/database');
 
-mongoose.connect(config.database, { useCreateIndex: true, useNewUrlParser: true });
+mongoose.connect(config.database, { useCreateIndex: true, useNewUrlParser: true, useUnifiedTopology: true });
 
 var api = require('./routes/api');
 
