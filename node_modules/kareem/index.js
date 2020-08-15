@@ -395,6 +395,10 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
     ++pres.numAsync;
   }
 
+  if (typeof fn !== 'function') {
+    throw new Error('pre() requires a function, got "' + typeof fn + '"');
+  }
+
   if (unshift) {
     pres.unshift(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
   } else {
@@ -411,6 +415,10 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
     unshift = !!fn;
     fn = options;
     options = {};
+  }
+
+  if (typeof fn !== 'function') {
+    throw new Error('post() requires a function, got "' + typeof fn + '"');
   }
 
   if (unshift) {

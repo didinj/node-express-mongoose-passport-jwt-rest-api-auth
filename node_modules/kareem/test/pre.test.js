@@ -65,6 +65,10 @@ describe('execPre', function() {
     assert.strictEqual(hooks._pres.get('cook')[1].fn, f1);
   });
 
+  it('throws error if no function', function() {
+    assert.throws(() => hooks.pre('test'), /got "undefined"/);
+  });
+
   it('arbitrary options', function() {
     const f1 = function() {};
     const f2 = function() {};
